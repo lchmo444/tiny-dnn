@@ -78,9 +78,24 @@ public:
         for (cnn_size_t i = 0; i < num_args_; i++)
             *in_grad[i] = *out_grad[0];
     }
+
+    template <class Archive>
+    static void load_and_construct(Archive & ar, cereal::construct<elementwise_add_layer> & construct) {
+        cnn_size_t num_args, dim;
+
+        ar(num_args, dim);
+        construct(num_args, dim);
+    }
+
+    template <class Archive>
+    void serialize(Archive & ar) {
+        ar(num_args_, dim_);
+    }
 private:
     cnn_size_t num_args_;
     cnn_size_t dim_;
 };
 
 } // namespace tiny_cnn
+
+CNN_REGISTER_LAYER(elementwise_add_layer);

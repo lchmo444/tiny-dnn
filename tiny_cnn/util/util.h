@@ -38,6 +38,10 @@
 #include "aligned_allocator.h"
 #include "nn_error.h"
 #include "tiny_cnn/config.h"
+#include <cereal/cereal.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 
 #ifdef CNN_USE_TBB
 #ifndef NOMINMAX
@@ -365,6 +369,13 @@ struct index3d {
         return width_ * height_ * depth_;
     }
 
+    template <class Archive>
+    void serialize(Archive & ar) {
+        ar(cereal::make_nvp("width", width));
+        ar(cereal::make_nvp("height", height));
+        ar(cereal::make_nvp("depth", depth));
+    }
+
     T width_;
     T height_;
     T depth_;
@@ -537,3 +548,24 @@ inline void fill_tensor(tensor_t& tensor, float_t value, cnn_size_t size) {
 #define CNN_DEFAULT_MOVE_CONSTRUCTOR_UNAVAILABLE
 #define CNN_DEFAULT_ASSIGNMENT_OPERATOR_UNAVAILABLE
 #endif
+
+
+#define CNN_REGISTER_LAYER(type) \
+CEREAL_REGISTER_TYPE(tiny_cnn::type);      \
+CEREAL_REGISTER_POLYMORPHIC_RELATION(tiny_cnn::layer, tiny_cnn::type)
+
+#define CNN_IMPLEMENT_CLONE_AND_SERIALIZATION(type, layer_param)             \
+virtual std::shared_ptr<layer> clone() const {                               \
+    return std::make_shared<type>(p_);                                       \
+}                                                                            \
+template <class Archive>                                                     \
+static void load_and_construct(Archive & ar,                                 \
+                               cereal::construct<type> & construct) {        \
+    layer_param param;                                                       \
+    param.serialize(ar);                                                     \
+    construct(param);                                                        \
+}                                                                            \
+template <class Archive>                                                     \
+void serialize(Archive & archive) {                                          \
+    p_.serialize(archive);                                                   \
+}

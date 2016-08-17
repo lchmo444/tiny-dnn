@@ -64,21 +64,22 @@ public:
     dropout_layer& operator=(dropout_layer&& obj) = default;
 #endif
 
-    void set_dropout_rate(float_t rate)
-    {
+    void set_dropout_rate(float_t rate) {
         dropout_rate_ = rate;
         scale_ = float_t(1) / (float_t(1) - dropout_rate_);
     }
 
+    float_t dropout_rate() const {
+        return dropout_rate_;
+    }
+
     ///< number of incoming connections for each output unit
-    size_t fan_in_size() const override
-    {
+    size_t fan_in_size() const override {
         return 1;
     }
 
     ///< number of outgoing connections for each input unit
-    size_t fan_out_size() const override
-    {
+    size_t fan_out_size() const override {
         return 1;
     }
 
@@ -160,6 +161,21 @@ public:
 		}
     }
 
+    template <class Archive>
+    static void load_and_construct(Archive & ar, cereal::construct<dropout_layer> & construct) {
+        net_phase phase;
+        float_t dropout_rate;
+        cnn_size_t in_size;
+
+        ar(in_size, dropout_rate, phase);
+        construct(in_size, dropout_rate, phase);
+    }
+    
+    template <class Archive>
+    void serialize(Archive & ar) {
+        ar(in_size_, dropout_rate_, phase_);
+    }
+
 private:
     net_phase phase_;
     float_t dropout_rate_;
@@ -169,3 +185,5 @@ private:
 };
 
 } // namespace tiny_cnn
+
+CNN_REGISTER_LAYER(dropout_layer);

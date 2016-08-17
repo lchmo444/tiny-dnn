@@ -58,6 +58,22 @@ TEST(dropout, randomized) {
     EXPECT_GE(num_units * dropout_rate / margin_factor, num_on2);
 }
 
+TEST(dropout, serialize) {
+    auto l1 = std::make_unique<dropout_layer>(1024, 0.5, net_phase::test);
+
+    std::stringstream ss;
+    {
+        cereal::JSONOutputArchive oarchive(ss);
+        oarchive(l1);
+    }
+
+    std::unique_ptr<dropout_layer> l2;
+    cereal::JSONInputArchive iarchive(ss);
+    iarchive(l2);
+
+    EXPECT_FLOAT_EQ(l1->dropout_rate(), l2->dropout_rate());
+}
+
 TEST(dropout, read_write) {
     dropout_layer l1(1024, 0.5, net_phase::test);
     dropout_layer l2(1024, 0.5, net_phase::test);
